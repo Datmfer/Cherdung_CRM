@@ -1,13 +1,13 @@
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 text-white py-12">
+    <footer className="bg-gray-900 dark:bg-black text-white py-12">
       <div className="max-w-7xl mx-auto px-8">
 
         <div className="grid grid-cols-4 gap-8">
 
           {/* Company */}
           <div>
-            <h3 className="text-2xl font-bold text-blue-400">
+            <h3 className="text-2xl font-bold text-indigo-400">
               Cherdung Infotech
             </h3>
 
@@ -24,10 +24,10 @@ export default function Footer() {
             </h4>
 
             <ul className="space-y-2 text-gray-400">
-              <li><a href="#">Home</a></li>
-              <li><a href="#">Investments</a></li>
-              <li><a href="#">About</a></li>
-              <li><a href="#">Contact</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Home</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Investments</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">About</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Contact</a></li>
             </ul>
           </div>
 
@@ -66,7 +66,7 @@ export default function Footer() {
 
         </div>
 
-        <hr className="my-8 border-gray-700" />
+        <hr className="my-8 border-gray-800" />
 
         <p className="text-center text-gray-500">
           © 2026 Cherdung Infotech. All Rights Reserved.
