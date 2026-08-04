@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="bg-gray-900 dark:bg-black text-white py-12">
@@ -24,10 +26,10 @@ export default function Footer() {
             </h4>
 
             <ul className="space-y-2 text-gray-400">
-              <li><a href="#" className="hover:text-indigo-400 transition-colors">Home</a></li>
-              <li><a href="#" className="hover:text-indigo-400 transition-colors">Investments</a></li>
-              <li><a href="#" className="hover:text-indigo-400 transition-colors">About</a></li>
-              <li><a href="#" className="hover:text-indigo-400 transition-colors">Contact</a></li>
+              <li><Link href="/" className="hover:text-indigo-400 transition-colors">Home</Link></li>
+              <li><Link href="/investment-plans" className="hover:text-indigo-400 transition-colors">Investments</Link></li>
+              <li><Link href="/about-us" className="hover:text-indigo-400 transition-colors">About</Link></li>
+              <li><Link href="/contact" className="hover:text-indigo-400 transition-colors">Contact</Link></li>
             </ul>
           </div>
 

@@ -1,0 +1,38 @@
+[
+  {
+    "email": "admin@cherdung.com",
+    "password": "$2b$10$Gt5surkrbmRfL/j2aZSKzeug/ZQbsaXcG/PA/F1Sg4BaBG4zBDj.y",
+    "role": "admin",
+    "name": "Admin User",
+    "id": "mse77htrxc153a1m257",
+    "createdAt": "2026-08-04T05:09:08.991Z",
+    "updatedAt": "2026-08-04T05:09:08.992Z"
+  },
+  {
+    "name": "Deepak Magar",
+    "email": "dpk@gmail.com",
+    "password": "$2b$10$s7160.2Rl95vAMhdOVP24.C8mcgAKV5xmFYQSzXNO2VptT2TlnhqK",
+    "role": "user",
+    "id": "mse7grjrp4hirotwojp",
+    "createdAt": "2026-08-04T05:16:21.495Z",
+    "updatedAt": "2026-08-04T05:16:21.495Z"
+  },
+  {
+    "name": "Dipak",
+    "email": "Dipak@chd.com",
+    "password": "$2b$10$C1owh3aBXIO0YUCwmDIfWe8tSOK7N.8gRI/Jmq.63D6k0m.apqe8i",
+    "role": "support",
+    "id": "mse8puxs9k2hdeiht4j",
+    "createdAt": "2026-08-04T05:51:25.408Z",
+    "updatedAt": "2026-08-04T05:51:25.408Z"
+  },
+  {
+    "name": "Ram Bahadur",
+    "email": "ram@chd.com",
+    "password": "$2b$10$CRxB4PfOHJp2XBGxcGSELuBS2NquM2ckGUsCWZN0MVOxuRUgIXRH.",
+    "role": "user",
+    "id": "mse9lmwqrq66fx4g2rg",
+    "createdAt": "2026-08-04T06:16:07.994Z",
+    "updatedAt": "2026-08-04T06:16:07.994Z"
+  }
+]

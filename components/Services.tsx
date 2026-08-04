@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Services() {
   const services = [
     {
@@ -67,9 +69,12 @@ export default function Services() {
               </p>
 
               {/* Link */}
-              <button className="mt-8 text-indigo-600 font-semibold group-hover:translate-x-1 transition-transform">
+              <Link 
+                href="/how-it-works"
+                className="mt-8 inline-block text-indigo-600 font-semibold group-hover:translate-x-1 transition-transform"
+              >
                 Learn More →
-              </button>
+              </Link>
             </div>
           ))}
         </div>

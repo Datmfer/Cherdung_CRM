@@ -1,7 +1,44 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      
+      // Redirect based on user role
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.user?.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (data.user?.role === 'support') {
+        router.push('/support/dashboard');
+      } else {
+        router.push('/user-dashboard/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 py-16 dark:from-[#0f172a] dark:via-[#111827] dark:to-[#1e1b4b]">
       <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-gray-800 dark:bg-[#111827]">
@@ -37,7 +74,13 @@ export default function LoginPage() {
 
         {/* Form */}
 
-        <form className="mt-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Email */}
 
           <div>
@@ -54,6 +97,9 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
               />
             </div>
@@ -75,6 +121,9 @@ export default function LoginPage() {
               <input
                 type="password"
                 placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
               />
             </div>
@@ -103,10 +152,11 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            Sign In
-            <ArrowRight size={18} />
+            {loading ? 'Signing in...' : 'Sign In'}
+            {!loading && <ArrowRight size={18} />}
           </button>
         </form>
 

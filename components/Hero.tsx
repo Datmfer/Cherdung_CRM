@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Hero() {
   return (
     <section className="max-w-7xl mx-auto flex items-center justify-between gap-20 px-8 py-28">
@@ -20,13 +22,19 @@ export default function Hero() {
         </p>
 
         <div className="mt-10 flex gap-5">
-          <button className="rounded-xl bg-indigo-600 px-7 py-4 text-white font-semibold shadow-lg hover:bg-indigo-700 transition">
+          <Link 
+            href="/investment-plans"
+            className="rounded-xl bg-indigo-600 px-7 py-4 text-white font-semibold shadow-lg hover:bg-indigo-700 transition"
+          >
             Become an Investor
-          </button>
+          </Link>
 
-          <button className="rounded-xl border border-gray-300 px-7 py-4 font-semibold hover:bg-gray-100 transition dark:border-gray-700 dark:hover:bg-gray-800">
+          <Link 
+            href="/investment-plans"
+            className="rounded-xl border border-gray-300 px-7 py-4 font-semibold hover:bg-gray-100 transition dark:border-gray-700 dark:hover:bg-gray-800"
+          >
             Explore Investments →
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -50,7 +58,7 @@ export default function Hero() {
 
           <div className="rounded-xl bg-green-50 p-5">
             <p className="text-sm text-gray-500">Revenue</p>
-            <h3 className="text-3xl font-bold mt-2">$50K</h3>
+            <h3 className="text-3xl font-bold mt-2">NPR 66.5L</h3>
           </div>
 
           <div className="rounded-xl bg-orange-50 p-5">
