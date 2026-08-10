@@ -8,12 +8,12 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const activeClass =
-    "text-indigo-600 relative after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-indigo-600";
+    "text-indigo-400 relative after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-indigo-400";
   const inactiveClass =
-    "text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors";
+    "text-slate-400 hover:text-indigo-400 transition-colors duration-200";
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md dark:bg-[#111827]/80 dark:border-gray-800">
+    <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(8,12,20,0.85)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
@@ -22,10 +22,10 @@ export default function Navbar() {
           </div>
 
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg font-bold text-white">
               Cherdung CRM
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs" style={{ color: '#475569' }}>
               Investment Platform
             </p>
           </div>
@@ -88,10 +88,10 @@ export default function Navbar() {
           {loading ? null : user ? (
             <>
               <div className="hidden sm:flex flex-col items-end text-right">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                <span className="text-sm font-semibold text-white">
                   {user.name}
                 </span>
-                <span className="text-xs capitalize text-gray-500 dark:text-gray-400">
+                <span className="text-xs capitalize" style={{ color: '#475569' }}>
                   {user.role}
                 </span>
               </div>
@@ -113,7 +113,8 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="hidden sm:block text-gray-700 dark:text-gray-300 font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="hidden sm:block font-medium text-sm transition-colors duration-200 hover:text-indigo-400"
+                style={{ color: '#94a3b8' }}
               >
                 Login
               </Link>

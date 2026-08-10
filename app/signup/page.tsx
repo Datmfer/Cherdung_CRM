@@ -39,8 +39,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-md w-full space-y-8 bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 relative overflow-hidden" style={{ background: '#080c14' }}>
+      {/* Orb */}
+      <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)' }} />
+      <div className="max-w-md w-full space-y-8 relative z-10 rounded-2xl shadow-2xl p-8" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div>
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
             <User className="h-6 w-6" />
