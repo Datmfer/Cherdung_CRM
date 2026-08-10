@@ -1,177 +1,155 @@
+"use client";
+
+import React from 'react';
+import Link from 'next/link';
 import StatCard from "@/components/dashboard/StatCard";
 import SimpleChart from "@/components/dashboard/SimpleChart";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import { useAuth } from '@/contexts/AuthContext';
+import { Wallet, TrendingUp, ShieldCheck, User, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export default function UserDashboard() {
+  const { user } = useAuth();
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          My Dashboard
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Welcome back! Here's your investment overview.
-        </p>
+    <div className="p-8 space-y-8 bg-slate-900 text-white min-h-screen">
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-indigo-900/80 via-slate-800 to-emerald-900/40 border border-indigo-500/20 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">
+            <Wallet className="h-3.5 w-3.5" /> PERSONAL CLIENT PORTFOLIO
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+            Welcome back, {user?.name || 'Valued Client'}!
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Here is your personal investment summary and account status.
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Link
+            href="/investment-plans"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-emerald-500/20"
+          >
+            <TrendingUp className="h-4 w-4" /> Explore Investment Plans
+          </Link>
+          <Link
+            href="/user-dashboard/profile"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-sm rounded-xl transition-colors"
+          >
+            <User className="h-4 w-4" /> Edit Profile & Avatar
+          </Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Account Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Total Balance"
-          value="NPR 12,450"
-          change="+8.5%"
+          title="Total Portfolio Value"
+          value="NPR 125,450"
+          change="+14.5% lifetime"
           icon="💰"
+          color="emerald"
+        />
+        <StatCard
+          title="Active Plans"
+          value="2 Active"
+          change="Professional Tier"
+          icon="📈"
           color="indigo"
         />
         <StatCard
-          title="Active Investments"
-          value="3"
-          change="+1"
-          icon="📈"
-          color="green"
-        />
-        <StatCard
-          title="Total Profit"
-          value="NPR 2,340"
-          change="+12.3%"
+          title="Total Earnings"
+          value="NPR 18,340"
+          change="+12.3% this month"
           icon="💵"
           color="blue"
         />
         <StatCard
-          title="Pending Withdrawals"
-          value="NPR 500"
-          change="0%"
-          icon="⏳"
+          title="Verification Status"
+          value={user?.emailVerified ? "Verified" : "Unverified"}
+          change={user?.totpEnabled ? "2FA Protection On" : "2FA Off"}
+          icon="🛡️"
           color="purple"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Portfolio Performance
-            </h3>
-            <SimpleChart
-              data={[10000, 10500, 11200, 10800, 11500, 12100, 11800, 12450]}
-              color="green"
-              label="Portfolio value over time"
-            />
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <span>📈</span> Portfolio Growth History
+          </h3>
+          <SimpleChart
+            data={[10000, 10500, 11200, 10800, 11500, 12100, 11800, 12450, 12800]}
+            color="green"
+            label="Portfolio valuation trend"
+          />
         </div>
 
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Quick Actions
+        <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6 space-y-4">
+          <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+            <span>⚡</span> Quick Account Actions
           </h3>
           <div className="space-y-3">
-            <Button variant="primary" className="w-full">
-              New Investment
-            </Button>
-            <Button variant="secondary" className="w-full">
-              Withdraw Funds
-            </Button>
-            <Button variant="secondary" className="w-full">
-              View Statements
-            </Button>
-            <Button variant="secondary" className="w-full">
+            <Link
+              href="/investment-plans"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm transition-colors text-white"
+            >
+              <TrendingUp className="h-4 w-4" /> Upgrade Plan
+            </Link>
+            <Link
+              href="/user-dashboard/profile"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold text-sm transition-colors text-white"
+            >
+              <ShieldCheck className="h-4 w-4" /> Security & 2FA
+            </Link>
+            <Link
+              href="/contact"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold text-sm transition-colors text-white"
+            >
               Contact Support
-            </Button>
+            </Link>
           </div>
-        </Card>
+        </div>
       </div>
 
+      {/* Personal Transactions & Plan Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Investments
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
+        <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">My Subscribed Plans</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Growth Plan
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Started: Jan 15, 2024
-                </p>
+                <p className="font-bold text-white">Professional Investment Tier</p>
+                <p className="text-xs text-slate-400">Renews Monthly • Active</p>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  NPR 5,000
-                </p>
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  +12.5%
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Premium Plan
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Started: Dec 1, 2023
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  NPR 7,450
-                </p>
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  +8.3%
-                </p>
+                <p className="font-semibold text-emerald-400">NPR 149 / mo</p>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Transactions
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Deposit
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Jan 20, 2024
-                </p>
+        <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">Recent Portfolio Activity</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <ArrowUpRight className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white">Monthly Profit Distribution</p>
+                  <p className="text-xs text-slate-400">Automated Payout</p>
+                </div>
               </div>
-              <p className="font-semibold text-green-600 dark:text-green-400">
-                +NPR 1,000
-              </p>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Withdrawal
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Jan 18, 2024
-                </p>
-              </div>
-              <p className="font-semibold text-red-600 dark:text-red-400">
-                -NPR 500
-              </p>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Profit Payout
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Jan 15, 2024
-                </p>
-              </div>
-              <p className="font-semibold text-green-600 dark:text-green-400">
-                +NPR 340
-              </p>
+              <p className="font-bold text-emerald-400">+NPR 1,240</p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

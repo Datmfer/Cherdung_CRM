@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cherdung CRM Application
 
-## Getting Started
+A modern, full-stack CRM built with Next.js 16, React 19, Prisma ORM, and Tailwind CSS featuring role-based access control, dual-token JWT authentication, email verification, password reset, admin tools with CSV export, audit logging, 2FA, avatar uploads, and Stripe subscription support.
 
-First, run the development server:
+---
+
+## ⚡ Quick Start
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment variables (.env)
+# DATABASE_URL="file:./dev.db"
+# JWT_SECRET="your-secret-key"
+
+# 3. Setup database & seed data
+npm run db:push
+npm run seed
+
+# 4. Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔑 Default Accounts (Post-Seed)
 
-## Learn More
+- **Admin Account:** `admin@cherdung.com` / `admin123`
+- **Support Account:** `support@cherdung.com` / `support123`
+- **User Account:** `user@cherdung.com` / `user12345`
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠 Available Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev`: Start Next.js development server.
+- `npm run build`: Build production bundle.
+- `npm run seed`: Seed database with initial users and plans.
+- `npm run db:push`: Push Prisma schema to SQLite/Postgres DB.
+- `npm run dev:db`: Open Prisma Studio database viewer.
+- `npm run test`: Run Jest unit and API tests.
+- `npm run test:e2e`: Run Playwright E2E browser tests.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📚 Documentation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For complete details on authentication flows, RBAC middleware, 2FA, API endpoints, and database models, refer to [AUTHENTICATION.md](AUTHENTICATION.md).

@@ -1,231 +1,155 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { User, Mail, Lock, ArrowRight } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, Mail, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    // Validate password length
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
-    }
-
     setLoading(true);
+    setError('');
+    setSuccessMsg('');
 
     try {
       await signup(name, email, password);
-      router.push('/user-dashboard/dashboard');
+      setSuccessMsg('Account created successfully! Please check your email for verification.');
+      setTimeout(() => {
+        router.push('/user-dashboard/dashboard');
+      }, 2000);
     } catch (err: any) {
-      setError(err.message || "Signup failed. Please try again.");
+      setError(err.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 py-16 dark:from-[#0f172a] dark:via-[#111827] dark:to-[#1e1b4b]">
-      <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-gray-800 dark:bg-[#111827]">
-        {/* Logo */}
-
-        <div className="flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-bold text-white shadow-lg">
-            C
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-md w-full space-y-8 bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700">
+        <div>
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+            <User className="h-6 w-6" />
           </div>
-        </div>
-
-        {/* Heading */}
-
-        <div className="mt-6 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          <h2 className="mt-4 text-center text-3xl font-extrabold text-white tracking-tight">
             Create Your Account
-          </h1>
-
-          <p className="mt-3 text-gray-500 dark:text-gray-400">
-            Join Cherdung CRM and start managing your business today.
+          </h2>
+          <p className="mt-2 text-center text-sm text-slate-400">
+            Get started with Cherdung CRM today
           </p>
         </div>
 
-        {/* Form */}
-
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
-            {error}
+          <div className="p-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-3 text-sm">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div>{error}</div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          {/* Full Name */}
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Full Name
-            </label>
-
-            <div className="relative">
-              <User
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
-              />
-            </div>
+        {successMsg && (
+          <div className="p-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-3 text-sm">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <div>{successMsg}</div>
           </div>
+        )}
 
-          {/* Email */}
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Email
-            </label>
-
-            <div className="relative">
-              <Mail
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-
-            <div className="relative">
-              <Lock
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                type="password"
-                placeholder="Create a password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
-              />
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Full Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <User className="h-5 w-5" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-xl bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder="John Doe"
+                />
+              </div>
             </div>
 
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Must contain at least 8 characters.
-            </p>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-xl bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
 
-          {/* Confirm Password */}
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Confirm Password
-            </label>
-
-            <div className="relative">
-              <Lock
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                type="password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
-              />
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              <PasswordStrengthMeter password={password} />
             </div>
           </div>
-
-          {/* Terms */}
-
-          <label className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-400">
-            <input
-              type="checkbox"
-              className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-
-            <span>
-              I agree to the{" "}
-              <Link
-                href="/terms"
-                className="font-medium text-indigo-600 hover:underline"
-              >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                className="font-medium text-indigo-600 hover:underline"
-              >
-                Privacy Policy
-              </Link>
-              .
-            </span>
-          </label>
-
-          {/* Button */}
 
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
-            {!loading && <ArrowRight size={18} />}
+            {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        {/* Footer */}
-
-        <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-indigo-600 hover:text-indigo-500"
-          >
-            Sign In
-          </Link>
-        </p>
+        <div className="text-center pt-2">
+          <p className="text-sm text-slate-400">
+            Already have an account?{' '}
+            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

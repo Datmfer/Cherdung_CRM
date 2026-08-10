@@ -1,31 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { updateUser, deleteUser, findUserById } from '@/lib/storage';
-import { hashPassword } from '@/lib/auth';
+import { verifyToken, hashPassword } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 
 // PATCH - Update user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify admin access
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get('access_token')?.value || request.cookies.get('auth_token')?.value;
     const session = verifyToken(token || '');
-    
-    if (!session || session.role !== 'admin') {
+
+    if (!session || session.role.toLowerCase() !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 403 }
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, email, password, role } = body;
 
-    // Check if user exists
-    const existingUser = findUserById(id);
+    const existingUser = await db.user.findUnique({ where: { id } });
     if (!existingUser) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -33,8 +31,7 @@ export async function PATCH(
       );
     }
 
-    // Prevent admin from deleting themselves or changing their own role
-    if (id === session.userId && role && role !== 'admin') {
+    if (id === session.userId && role && role.toLowerCase() !== 'admin') {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }
@@ -43,27 +40,27 @@ export async function PATCH(
 
     const updates: any = {};
     if (name) updates.name = name;
-    if (email) updates.email = email;
-    if (role) updates.role = role;
+    if (email) updates.email = email.toLowerCase();
+    if (role) updates.role = role.toUpperCase();
     if (password) {
-      updates.password = await hashPassword(password);
+      updates.passwordHash = await hashPassword(password);
     }
 
-    const updatedUser = updateUser(id, updates);
-    
-    if (!updatedUser) {
-      return NextResponse.json(
-        { error: 'Failed to update user' },
-        { status: 500 }
-      );
-    }
+    const updatedUser = await db.user.update({
+      where: { id },
+      data: updates,
+    });
 
-    // Return user without password
-    const { password: _, ...safeUser } = updatedUser;
+    await logActivity(session.userId, 'ADMIN_USER_UPDATED', { targetUserId: id, updates }, request);
 
     return NextResponse.json({
       success: true,
-      user: safeUser,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role.toLowerCase(),
+      },
     });
   } catch (error: any) {
     console.error('Update user error:', error);
@@ -77,23 +74,21 @@ export async function PATCH(
 // DELETE - Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify admin access
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get('access_token')?.value || request.cookies.get('auth_token')?.value;
     const session = verifyToken(token || '');
-    
-    if (!session || session.role !== 'admin') {
+
+    if (!session || session.role.toLowerCase() !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 403 }
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
-    // Prevent admin from deleting themselves
     if (id === session.userId) {
       return NextResponse.json(
         { error: 'Cannot delete your own account' },
@@ -101,14 +96,8 @@ export async function DELETE(
       );
     }
 
-    const deleted = deleteUser(id);
-    
-    if (!deleted) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    await db.user.delete({ where: { id } });
+    await logActivity(session.userId, 'ADMIN_USER_DELETED', { targetUserId: id }, request);
 
     return NextResponse.json({
       success: true,

@@ -1,104 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { getUsers, createUser, updateUser, deleteUser } from '@/lib/storage';
-import { hashPassword } from '@/lib/auth';
+import { db } from '@/lib/db';
 
-// GET - List all users
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    // Verify admin access
-    const token = request.cookies.get('auth_token')?.value;
-    const session = verifyToken(token || '');
-    
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 403 }
-      );
+    const token = req.cookies.get('access_token')?.value || req.cookies.get('auth_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const users = getUsers();
-    
-    // Return users without passwords
-    const safeUsers = users.map(({ password, ...user }) => user);
-    
-    return NextResponse.json({
-      success: true,
-      users: safeUsers,
-    });
-  } catch (error) {
-    console.error('Get users error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST - Create new user
-export async function POST(request: NextRequest) {
-  try {
-    // Verify admin access
-    const token = request.cookies.get('auth_token')?.value;
-    const session = verifyToken(token || '');
-    
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 403 }
-      );
+    const session = verifyToken(token);
+    if (!session || session.role.toLowerCase() !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { name, email, password, role } = body;
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const roleFilter = searchParams.get('role');
+    const query = searchParams.get('query');
+    const format = searchParams.get('format');
 
-    // Validate input
-    if (!name || !email || !password || !role) {
-      return NextResponse.json(
-        { error: 'Name, email, password, and role are required' },
-        { status: 400 }
-      );
+    const where: any = {};
+
+    if (roleFilter && roleFilter !== 'all') {
+      where.role = roleFilter.toUpperCase();
     }
 
-    // Validate role
-    if (!['admin', 'support', 'user'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role. Must be admin, support, or user' },
-        { status: 400 }
-      );
+    if (query) {
+      where.OR = [
+        { name: { contains: query } },
+        { email: { contains: query } },
+      ];
     }
 
-    // Validate password length
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
+    // CSV Export
+    if (format === 'csv') {
+      const allUsers = await db.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const csvHeaders = 'ID,Name,Email,Role,Email Verified,Created At\n';
+      const csvRows = allUsers
+        .map(
+          (u) =>
+            `"${u.id}","${u.name.replace(/"/g, '""')}","${u.email}","${u.role}","${
+              u.emailVerified ? u.emailVerified.toISOString() : 'Unverified'
+            }","${u.createdAt.toISOString()}"`
+        )
+        .join('\n');
+
+      const csvContent = csvHeaders + csvRows;
+
+      return new NextResponse(csvContent, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename=users-export-${Date.now()}.csv`,
+        },
+      });
     }
 
-    // Hash password
-    const hashedPassword = await hashPassword(password);
+    const skip = (page - 1) * limit;
 
-    // Create user
-    const user = createUser({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const [users, totalCount] = await Promise.all([
+      db.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          emailVerified: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      db.user.count({ where }),
+    ]);
 
-    // Return user without password
-    const { password: _, ...safeUser } = user;
+    const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       success: true,
-      user: safeUser,
+      users: users.map((u) => ({
+        ...u,
+        role: u.role.toLowerCase(),
+      })),
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+      },
     });
   } catch (error: any) {
-    console.error('Create user error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Admin users endpoint error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

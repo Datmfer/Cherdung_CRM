@@ -1,78 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword, generateToken } from '@/lib/auth';
-import { createUser, findUserByEmail } from '@/lib/storage';
-import { RegisterData } from '@/lib/types';
+import crypto from 'crypto';
+import { db } from '@/lib/db';
+import { hashPassword, createAuthTokens } from '@/lib/auth';
+import { signupSchema } from '@/lib/validation';
+import { sendVerificationEmail } from '@/lib/email';
+import { logActivity } from '@/lib/activity';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body: RegisterData = await request.json();
-    const { name, email, password } = body;
+    const body = await req.json();
+    const validation = signupSchema.safeParse(body);
 
-    // Validate input
-    if (!name || !email || !password) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Name, email, and password are required' },
+        { error: 'Validation failed', details: validation.error.format() },
         { status: 400 }
       );
     }
 
-    // Validate password length
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
-    }
+    const { name, email, password } = validation.data;
+    const normalizedEmail = email.toLowerCase();
 
-    // Check if user already exists
-    const existingUser = findUserByEmail(email);
+    const existingUser = await db.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
-    // Hash password
-    const hashedPassword = await hashPassword(password);
+    const passwordHash = await hashPassword(password);
 
-    // Create user (default role is 'user')
-    const user = createUser({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'user',
+    const user = await db.user.create({
+      data: {
+        name,
+        email: normalizedEmail,
+        passwordHash,
+        role: 'USER',
+        emailVerified: null,
+      },
     });
 
-    // Generate token
-    const token = generateToken(user);
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours validity
 
-    // Create response
+    await db.verificationToken.create({
+      data: {
+        email: normalizedEmail,
+        token: verificationToken,
+        expiresAt,
+      },
+    });
+
+    // Send verification email
+    await sendVerificationEmail(normalizedEmail, verificationToken);
+
+    // Issue initial session tokens
+    const { accessToken, refreshToken } = await createAuthTokens(user.id);
+
+    // Log activity
+    await logActivity(user.id, 'USER_SIGNUP', { email: user.email }, req);
+
     const response = NextResponse.json({
       success: true,
+      message: 'Account created successfully. Verification email sent.',
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.role.toLowerCase(),
+        emailVerified: null,
       },
-      token,
+      token: accessToken,
     });
 
-    // Set HTTP-only cookie
-    response.cookies.set('auth_token', token, {
+    response.cookies.set('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
+      maxAge: 15 * 60,
+    });
+
+    response.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    response.cookies.set('auth_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

@@ -5,12 +5,14 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Card from "@/components/ui/Card";
+import { Download, ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: "admin" | "support" | "user";
+  emailVerified?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +22,11 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRole, setSelectedRole] = useState("all");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   // Create user form state
   const [createForm, setCreateForm] = useState({
@@ -33,6 +40,7 @@ export default function AdminUsers() {
   const [createLoading, setCreateLoading] = useState(false);
 
   const roleOptions = [
+    { value: "all", label: "All Roles" },
     { value: "user", label: "User" },
     { value: "support", label: "Support" },
     { value: "admin", label: "Admin" },
@@ -40,20 +48,39 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page, selectedRole, searchTerm]);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/admin/users");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        role: selectedRole,
+        query: searchTerm,
+      });
+
+      const response = await fetch(`/api/admin/users?${params.toString()}`);
       const data = await response.json();
       if (data.success) {
         setUsers(data.users);
+        setTotalPages(data.pagination.totalPages || 1);
+        setTotalUsers(data.pagination.totalCount || 0);
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    const params = new URLSearchParams({
+      role: selectedRole,
+      query: searchTerm,
+      format: "csv",
+    });
+    window.open(`/api/admin/users?${params.toString()}`, "_blank");
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -73,7 +100,7 @@ export default function AdminUsers() {
     setCreateLoading(true);
 
     try {
-      const response = await fetch("/api/admin/users", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -86,7 +113,7 @@ export default function AdminUsers() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok) {
         setCreateForm({
           name: "",
           email: "",
@@ -106,71 +133,32 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-
-    try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        fetchUsers();
-      } else {
-        alert(data.error || "Failed to delete user");
-      }
-    } catch (error) {
-      alert("Failed to delete user");
-    }
-  };
-
-  const handleRoleChange = async (
-    userId: string,
-    newRole: "admin" | "support" | "user",
-  ) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        fetchUsers();
-      } else {
-        alert(data.error || "Failed to update user role");
-      }
-    } catch (error) {
-      alert("Failed to update user role");
-    }
-  };
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   const roleColors = {
-    admin:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    admin: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
     support: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     user: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          User Management
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Manage all users and their access levels
-        </p>
+    <div className="p-8 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            User Management
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage all platform users, assign role permissions, and export reports
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={handleExportCSV} className="flex items-center gap-2">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button variant="primary" onClick={() => setShowCreateForm(!showCreateForm)} className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" /> {showCreateForm ? "Cancel" : "Add User"}
+          </Button>
+        </div>
       </div>
 
       {/* Create User Form */}
@@ -233,7 +221,7 @@ export default function AdminUsers() {
 
             <Select
               label="Role"
-              options={roleOptions}
+              options={roleOptions.filter((r) => r.value !== "all")}
               value={createForm.role}
               onChange={(e) =>
                 setCreateForm({ ...createForm, role: e.target.value as any })
@@ -256,24 +244,31 @@ export default function AdminUsers() {
         </Card>
       )}
 
-      {/* Search and Actions */}
-      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <Input
-              placeholder="Search users by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
+      {/* Filter and Search Bar */}
+      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <div className="relative">
+              <Input
+                placeholder="Search users by name or email..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-10"
+              />
+            </div>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              onClick={() => setShowCreateForm(!showCreateForm)}
-            >
-              {showCreateForm ? "Cancel" : "Add User"}
-            </Button>
+          <div>
+            <Select
+              options={roleOptions}
+              value={selectedRole}
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+                setPage(1);
+              }}
+            />
           </div>
         </div>
       </div>
@@ -284,11 +279,14 @@ export default function AdminUsers() {
           Loading users...
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              All Users ({filteredUsers.length})
+              Total Users ({totalUsers})
             </h2>
+            <div className="text-sm text-slate-400">
+              Page {page} of {totalPages}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -302,15 +300,15 @@ export default function AdminUsers() {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Created
+                    Verification
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
+                    Created
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {filteredUsers.map((user) => (
+                {users.map((user) => (
                   <tr
                     key={user.id}
                     className="hover:bg-gray-50 dark:hover:bg-[#111827]"
@@ -326,33 +324,51 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={user.role}
-                        onChange={(e) =>
-                          handleRoleChange(user.id, e.target.value as any)
-                        }
-                        className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${roleColors[user.role]}`}
-                      >
-                        <option value="user">User</option>
-                        <option value="support">Support</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${roleColors[user.role]}`}>
+                        {user.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.emailVerified ? (
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Unverified
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        Delete
-                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
+            <Button
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              className="flex items-center gap-1 text-sm"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+            <span className="text-sm text-slate-400">
+              Showing page {page} of {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+              className="flex items-center gap-1 text-sm"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}

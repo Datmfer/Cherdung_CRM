@@ -1,12 +1,21 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthSession } from '@/lib/types';
+
+export interface UserSession {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  emailVerified?: string | null;
+  avatarUrl?: string | null;
+  totpEnabled?: boolean;
+}
 
 interface AuthContextType {
-  user: AuthSession | null;
+  user: UserSession | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, totpCode?: string) => Promise<{ requires2FA?: boolean; user?: UserSession }>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -15,10 +24,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthSession | null>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
     checkAuth();
   }, []);
@@ -29,28 +37,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+      } else {
+        // Attempt refresh
+        const refreshRes = await fetch('/api/auth/refresh', { method: 'POST' });
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          setUser(refreshData.user);
+        } else {
+          setUser(null);
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, totpCode?: string) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, totpCode }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
+      if (data.requires2FA) {
+        return { requires2FA: true };
+      }
       throw new Error(data.error || 'Login failed');
     }
 
     setUser(data.user);
+    return { user: data.user };
   };
 
   const signup = async (name: string, email: string, password: string) => {
@@ -76,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout failed:', error);
     } finally {
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 

@@ -1,47 +1,74 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+
 interface ActivityItem {
   id: string;
-  user: string;
+  userName: string;
+  userEmail: string;
   action: string;
-  time: string;
-  type: 'user' | 'investment' | 'support' | 'system';
+  metadata: any;
+  createdAt: string;
 }
 
-const activities: ActivityItem[] = [
-  { id: '1', user: 'John Doe', action: 'Created new investment account', time: '2 minutes ago', type: 'user' },
-  { id: '2', user: 'System', action: 'Investment plan updated', time: '15 minutes ago', type: 'system' },
-  { id: '3', user: 'Support Team', action: 'Resolved ticket #1234', time: '1 hour ago', type: 'support' },
-  { id: '4', user: 'Jane Smith', action: 'Upgraded to Growth Plan', time: '2 hours ago', type: 'investment' },
-  { id: '5', user: 'Admin', action: 'Added new user', time: '3 hours ago', type: 'user' },
-];
-
-const typeIcons = {
-  user: '👤',
-  investment: '💰',
-  support: '💬',
-  system: '⚙️',
-};
-
-const typeColors = {
-  user: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
-  investment: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  support: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  system: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400',
-};
-
 export default function ActivityFeed() {
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      const res = await fetch('/api/activity');
+      if (res.ok) {
+        const data = await res.json();
+        setActivities(data.activities || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activity feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 text-center text-sm text-slate-400">
+        Loading activities...
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="p-4 text-center text-sm text-slate-400">
+        No recent activities recorded yet.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {activities.map((activity) => (
-        <div key={activity.id} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-[#111827] rounded-lg">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${typeColors[activity.type]}`}>
-            {typeIcons[activity.type]}
+        <div key={activity.id} className="flex items-start gap-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+            ⚡
           </div>
           <div className="flex-1">
             <p className="text-sm">
-              <span className="font-medium text-gray-900 dark:text-white">{activity.user}</span>
-              <span className="text-gray-600 dark:text-gray-400"> {activity.action}</span>
+              <span className="font-semibold text-white">{activity.userName}</span>
+              <span className="text-slate-300"> ({activity.action.replace(/_/g, ' ')})</span>
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{activity.time}</p>
+            {activity.metadata && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                {JSON.stringify(activity.metadata)}
+              </p>
+            )}
+            <p className="text-xs text-slate-500 mt-1">
+              {new Date(activity.createdAt).toLocaleString()}
+            </p>
           </div>
         </div>
       ))}

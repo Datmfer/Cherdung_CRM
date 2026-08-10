@@ -1,20 +1,17 @@
+import { db } from '../lib/db';
 import { hashPassword } from '../lib/auth';
-import { createUser, findUserByEmail } from '../lib/storage';
-import { User } from '../lib/types';
 
 async function createAdmin() {
   const email = 'admin@cherdung.com';
-  const password = 'admin123'; // Change this in production!
+  const password = 'admin123';
   const name = 'Admin User';
-  const role: 'admin' | 'support' | 'user' = 'admin';
+  const role = 'ADMIN';
 
-  console.log('Creating admin user...');
+  console.log('Creating admin user in Prisma DB...');
   console.log(`Email: ${email}`);
   console.log(`Password: ${password}`);
-  console.log('⚠️  Please change the password after first login!\n');
 
-  // Check if admin already exists
-  const existingUser = findUserByEmail(email);
+  const existingUser = await db.user.findUnique({ where: { email } });
   if (existingUser) {
     console.log('Admin user already exists!');
     console.log('User ID:', existingUser.id);
@@ -23,30 +20,26 @@ async function createAdmin() {
     return;
   }
 
-  // Hash password
   const hashedPassword = await hashPassword(password);
 
-  // Create admin user
   try {
-    const admin = createUser({
-      email,
-      password: hashedPassword,
-      role,
-      name,
+    const admin = await db.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        name,
+        role,
+        emailVerified: new Date(),
+      },
     });
 
-    console.log('✅ Admin user created successfully!');
+    console.log('✅ Admin user created successfully in Prisma DB!');
     console.log('User ID:', admin.id);
     console.log('Email:', admin.email);
     console.log('Role:', admin.role);
-    console.log('Name:', admin.name);
-    console.log('\nYou can now login with:');
-    console.log(`Email: ${email}`);
-    console.log(`Password: ${password}`);
   } catch (error) {
     console.error('❌ Error creating admin user:', error);
   }
 }
 
-// Run the script
 createAdmin().catch(console.error);

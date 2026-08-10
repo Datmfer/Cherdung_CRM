@@ -1,9 +1,16 @@
 export interface User {
   id: string;
   email: string;
-  password: string;
-  role: 'admin' | 'support' | 'user';
+  password?: string;
+  role: 'ADMIN' | 'SUPPORT' | 'USER' | 'admin' | 'support' | 'user';
   name: string;
+  emailVerified?: string | null;
+  avatarUrl?: string | null;
+  totpEnabled?: boolean;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
+  stripeStatus?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -11,7 +18,7 @@ export interface User {
 export interface AuthSession {
   userId: string;
   email: string;
-  role: 'admin' | 'support' | 'user';
+  role: string;
   name: string;
   expiresAt: string;
 }
@@ -19,10 +26,25 @@ export interface AuthSession {
 export interface LoginCredentials {
   email: string;
   password: string;
+  totpCode?: string;
 }
 
 export interface RegisterData {
   name: string;
   email: string;
   password: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  userId: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+  action: string;
+  metadata?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
 }

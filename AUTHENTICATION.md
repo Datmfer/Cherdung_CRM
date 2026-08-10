@@ -1,246 +1,94 @@
-# Authentication System
+# Production Authentication & Database Architecture
 
-This CRM application now has a complete authentication system with role-based access control.
+This document describes the production-grade authentication and database architecture implemented in the Cherdung CRM application.
 
-## Setup Instructions
+---
 
-### 1. Environment Configuration
+## 🚀 Quick Start
 
-Create a `.env` file in the root directory with the following:
-
+### 1. Environment Setup
+Copy or configure your `.env` file:
 ```env
-JWT_SECRET=your-secret-key-here
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your-jwt-access-secret"
+JWT_REFRESH_SECRET="your-jwt-refresh-secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Optional Email & Stripe Configuration
+SMTP_HOST="smtp.mailtrap.io"
+SMTP_PORT="2525"
+SMTP_USER=""
+SMTP_PASS=""
+EMAIL_FROM="noreply@cherdung.com"
 ```
 
-**Important:** Change the JWT_SECRET to a secure random string in production!
+### 2. Initialize Database & Seed Demo Data
+```bash
+# Push Prisma schema to SQLite/Postgres DB
+npm run db:push
 
-### 2. Create Admin User
+# Seed admin, support, regular user, and default plans
+npm run seed
+```
 
-Run the admin creation script:
+Default credentials created by seed:
+- **Admin:** `admin@cherdung.com` / `admin123` -> Redirects to `/admin/dashboard`
+- **Support:** `support@cherdung.com` / `support123` -> Redirects to `/support/dashboard`
+- **User:** `user@cherdung.com` / `user12345` -> Redirects to `/user-dashboard/dashboard`
+
+---
+
+## 🔐 Core Features Implemented
+
+### 1. Prisma ORM Database Storage
+- Replaced `users.json` with Prisma ORM database models (`User`, `RefreshToken`, `Session`, `VerificationToken`, `PasswordResetToken`, `Activity`, `Plan`).
+- Works with SQLite locally (`dev.db`) and PostgreSQL in production via `DATABASE_URL`.
+
+### 2. Server-Side Dual Token Auth with Rotation
+- **Access Tokens:** Short-lived JWTs (15 minutes).
+- **Refresh Tokens:** Long-lived tokens (7 days) stored securely as cryptographic SHA-256 hashes in the DB (`RefreshToken` model).
+- **Rotation:** Refresh tokens are revoked and rotated on every `/api/auth/refresh` request to prevent replay attacks.
+- **Cookies:** Stored in HTTP-Only, SameSite=Lax secure cookies (`access_token`, `refresh_token`).
+
+### 3. Role-Based Access Control (RBAC) & Middleware
+- Enforced automatically in `middleware.ts`:
+  - `/admin/*`: Admin only.
+  - `/support/*`: Admin and Support.
+  - `/user-dashboard/*`: All authenticated users.
+- Security Headers applied: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`.
+
+### 4. Server Validation & Email Verification Flow
+- Input validation enforced with Zod schemas (`lib/validation.ts`).
+- New signups receive a 24-hour verification token sent via email (or simulated in console if SMTP is unconfigured).
+
+### 5. Password Reset Flow
+- `/api/auth/request-reset`: Generates 1-hour reset token and dispatches reset email.
+- `/api/auth/reset-password`: Verifies token, updates password hash, and revokes active sessions.
+- Interactive UI at `/reset-password`.
+
+### 6. Admin Panel: Pagination, Filters, Search & CSV Export
+- `/api/admin/users`: Supports server-side pagination (`page`, `limit`), role filters (`role=ADMIN|SUPPORT|USER`), keyword search, and CSV downloads (`format=csv`).
+- UI at `/admin/users`.
+
+### 7. Avatar Uploads & Audit Logs
+- File uploads: Multipart endpoint `/api/user/avatar` saving to `public/uploads/avatars`.
+- Audit logs: Automatic logging via `lib/activity.ts` to `Activity` model, displayed dynamically in `ActivityFeed.tsx`.
+
+### 8. Two-Factor Authentication (2FA / TOTP)
+- TOTP secret generation, QR code rendering, and 6-digit verification via `/api/auth/2fa/*`.
+- 2FA challenge enforced during login if enabled.
+
+### 9. Stripe Billing & Subscriptions
+- Subscriptions endpoints `/api/stripe/checkout` and `/api/stripe/webhook` with fallback mock mode for local testing.
+
+---
+
+## 🧪 Testing
 
 ```bash
-npm run create-admin
+# Run unit & API integration tests (Jest)
+npm run test
+
+# Run E2E browser tests (Playwright)
+npm run test:e2e
 ```
-
-This will create an admin user with:
-- Email: `admin@cherdung.com`
-- Password: `admin123`
-
-**⚠️ Important:** Change the admin password after first login!
-
-### 3. Start the Development Server
-
-```bash
-npm run dev
-```
-
-## Login Credentials
-
-### Admin Access
-- **Email:** admin@cherdung.com
-- **Password:** admin123
-- **Redirects to:** `/admin/dashboard`
-
-### Regular User Access
-- Sign up via `/signup` page
-- Default role: `user`
-- **Redirects to:** `/user-dashboard/dashboard`
-
-## Features
-
-### 🔐 Authentication
-- Secure password hashing with bcrypt
-- JWT token-based authentication
-- HTTP-only cookies for session management
-- Automatic token expiration (7 days)
-
-### 👥 Role-Based Access Control
-- **Admin:** Full access to admin panel (`/admin/*`)
-- **Support:** Access to support panel (`/support/*`)
-- **User:** Access to user dashboard (`/user-dashboard/*`)
-
-### 🛡️ Route Protection
-- Middleware protects all role-specific routes
-- Automatic redirects based on user role
-- Login redirects users to appropriate dashboard
-
-### 🚪 Session Management
-- Login/logout functionality
-- Persistent sessions with cookies
-- Auto-redirect on login based on role
-- Logout clears session and redirects to login
-
-## API Endpoints
-
-### POST `/api/auth/login`
-Login with email and password.
-
-**Request:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": "user-id",
-    "email": "user@example.com",
-    "name": "User Name",
-    "role": "user"
-  },
-  "token": "jwt-token"
-}
-```
-
-### POST `/api/auth/signup`
-Create a new user account.
-
-**Request:**
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": "user-id",
-    "email": "john@example.com",
-    "name": "John Doe",
-    "role": "user"
-  },
-  "token": "jwt-token"
-}
-```
-
-### POST `/api/auth/logout`
-Logout the current user.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-### GET `/api/auth/me`
-Get current authenticated user.
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": "user-id",
-    "email": "user@example.com",
-    "name": "User Name",
-    "role": "user",
-    "createdAt": "2024-01-15T00:00:00.000Z"
-  }
-}
-```
-
-## File Structure
-
-```
-lib/
-├── types.ts           # TypeScript interfaces
-├── auth.ts            # Authentication utilities (hash, verify, tokens)
-└── storage.ts         # User data storage (JSON file based)
-
-contexts/
-└── AuthContext.tsx    # React context for auth state management
-
-app/api/auth/
-├── login/route.ts     # Login API endpoint
-├── signup/route.ts    # Signup API endpoint
-├── logout/route.ts    # Logout API endpoint
-└── me/route.ts        # Get current user endpoint
-
-scripts/
-└── create-admin.ts    # Admin user creation script
-
-middleware.ts          # Route protection middleware
-```
-
-## Security Notes
-
-### Current Implementation (MVP)
-- ✅ Password hashing with bcrypt
-- ✅ JWT token authentication
-- ✅ HTTP-only cookies
-- ✅ Role-based route protection
-- ✅ Input validation
-
-### Production Enhancements Needed
-- 🔲 Use a real database (PostgreSQL, MongoDB, etc.)
-- 🔲 Implement rate limiting for login attempts
-- 🔲 Add email verification for signup
-- 🔲 Implement password reset functionality
-- 🔲 Add two-factor authentication
-- 🔲 Use HTTPS in production
-- 🔲 Implement CSRF protection
-- 🔲 Add audit logging
-- 🔲 Use environment variables for all sensitive data
-- 🔲 Implement session timeout warnings
-
-## User Data Storage
-
-Currently, user data is stored in a JSON file (`data/users.json`). For production, this should be replaced with a proper database.
-
-### Creating Additional Admin/Support Users
-
-To create additional admin or support users, you can:
-
-1. **Modify the create-admin script** to create users with different roles
-2. **Add a registration code system** for role-based signup
-3. **Create an admin panel** to manage users and roles
-
-### Example: Creating a Support User
-
-Modify `scripts/create-admin.ts`:
-
-```typescript
-const role: 'admin' | 'support' | 'user' = 'support';
-const email = 'support@cherdung.com';
-```
-
-Then run `npm run create-admin`.
-
-## Troubleshooting
-
-### Login Not Working
-- Check that the admin user was created successfully
-- Verify the JWT_SECRET is set in .env
-- Check browser console for errors
-- Ensure cookies are enabled in your browser
-
-### Route Protection Issues
-- Clear your browser cookies
-- Check that middleware.ts is properly configured
-- Verify token is being set in cookies
-
-### Admin Script Issues
-- Ensure you have the required dependencies installed
-- Check that the data directory exists
-- Verify file permissions
-
-## Next Steps
-
-1. **Set up a real database** - Replace JSON file storage with a proper database
-2. **Add email verification** - Implement email confirmation for new users
-3. **Add password reset** - Allow users to reset forgotten passwords
-4. **Implement rate limiting** - Prevent brute force attacks
-5. **Add 2FA** - Two-factor authentication for enhanced security
-6. **Add audit logging** - Track user actions for security monitoring

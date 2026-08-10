@@ -1,177 +1,183 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, ArrowLeft } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import React, { useState, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get('redirect');
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setError('');
 
     try {
-      await login(email, password);
-      
-      // Redirect based on user role
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
-      
-      if (data.user?.role === 'admin') {
+      const res = await login(email, password, requires2FA ? totpCode : undefined);
+      if (res?.requires2FA) {
+        setRequires2FA(true);
+        setLoading(false);
+        return;
+      }
+
+      const role = res?.user?.role?.toLowerCase();
+
+      if (redirectTarget) {
+        router.push(redirectTarget);
+        return;
+      }
+
+      if (role === 'admin') {
         router.push('/admin/dashboard');
-      } else if (data.user?.role === 'support') {
+      } else if (role === 'support') {
         router.push('/support/dashboard');
       } else {
         router.push('/user-dashboard/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 py-16 dark:from-[#0f172a] dark:via-[#111827] dark:to-[#1e1b4b]">
-      <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-gray-800 dark:bg-[#111827]">
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-[#111827] dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
-          >
-            <ArrowLeft size={16} />
-            Home
-          </Link>
-        </div>
-
-        {/* Logo */}
-
-        <div className="flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-bold text-white shadow-lg">
-            C
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700">
+        <div>
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+            {requires2FA ? <ShieldCheck className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
           </div>
-        </div>
-
-        {/* Heading */}
-
-        <div className="mt-6 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            Welcome Back
-          </h1>
-
-          <p className="mt-3 text-gray-500 dark:text-gray-400">
-            Sign in to continue to your dashboard.
+          <h2 className="mt-4 text-center text-3xl font-extrabold text-white tracking-tight">
+            {requires2FA ? 'Two-Factor Verification' : 'Welcome Back'}
+          </h2>
+          <p className="mt-2 text-center text-sm text-slate-400">
+            {requires2FA
+              ? 'Enter the 6-digit code from your authenticator app'
+              : 'Sign in to access your dashboard'}
           </p>
         </div>
 
-        {/* Form */}
-
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
-            {error}
+          <div className="p-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-3 text-sm">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div>{error}</div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {/* Email */}
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {!requires2FA ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-xl bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Email
-            </label>
-
-            <div className="relative">
-              <Mail
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-slate-300">
+                    Password
+                  </label>
+                  <Link
+                    href="/reset-password"
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm pr-10"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                2FA Authenticator Code
+              </label>
               <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
                 required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                maxLength={6}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.trim())}
+                className="block w-full px-4 py-3 text-center tracking-widest text-xl border border-slate-700 rounded-xl bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="000000"
               />
             </div>
-          </div>
-
-          {/* Password */}
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-
-            <div className="relative">
-              <Lock
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-gray-700 dark:bg-[#0f172a] dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
-              />
-            </div>
-          </div>
-
-          {/* Options */}
-
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              Remember me
-            </label>
-
-            <Link
-              href="/forgot-password"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Forgot Password?
-            </Link>
-          </div>
-
-          {/* Button */}
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
-            {!loading && <ArrowRight size={18} />}
+            {loading
+              ? 'Verifying...'
+              : requires2FA
+              ? 'Verify Code'
+              : 'Sign In'}
           </button>
         </form>
 
-        {/* Footer */}
-
-        <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          Don't have an account?{" "}
-          <Link
-            href="/signup"
-            className="font-semibold text-indigo-600 hover:text-indigo-500"
-          >
-            Create Account
-          </Link>
-        </p>
+        <div className="text-center pt-2">
+          <p className="text-sm text-slate-400">
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
