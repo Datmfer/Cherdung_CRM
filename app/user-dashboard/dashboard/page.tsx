@@ -30,7 +30,7 @@ export default function UserDashboard() {
 
         <div className="flex gap-3">
           <Link
-            href="/investment-plans"
+            href="/user-dashboard/upgrade"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-emerald-500/20"
           >
             <TrendingUp className="h-4 w-4" /> Explore Investment Plans
@@ -94,7 +94,7 @@ export default function UserDashboard() {
           </h3>
           <div className="space-y-3">
             <Link
-              href="/investment-plans"
+              href="/user-dashboard/upgrade"
               className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm transition-colors text-white"
             >
               <TrendingUp className="h-4 w-4" /> Upgrade Plan

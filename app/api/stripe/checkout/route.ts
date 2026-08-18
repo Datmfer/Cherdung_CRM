@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       ],
       client_reference_id: session.userId,
       success_url: `${appUrl}/user-dashboard/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/investment-plans`,
+      cancel_url: `${appUrl}/user-dashboard/upgrade`,
     });
 
     return NextResponse.json({ url: checkoutSession.url });
