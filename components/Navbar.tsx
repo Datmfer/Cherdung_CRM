@@ -38,7 +38,7 @@ export default function Navbar() {
               href="/"
               className={pathname === "/" ? activeClass : inactiveClass}
             >
-              Home
+              {user ? "Blog Feed" : "Home"}
             </Link>
           </li>
 

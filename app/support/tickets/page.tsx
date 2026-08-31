@@ -99,19 +99,37 @@ export default function SupportTickets() {
     }
   };
 
-  const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newAttachments: TicketAttachment[] = Array.from(files).map((file, idx) => ({
-      id: `ATT-${Date.now()}-${idx}`,
-      name: file.name,
-      size: `${Math.round(file.size / 1024)} KB`,
-      type: file.type || "application/octet-stream",
-      url: URL.createObjectURL(file),
-    }));
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-    setReplyAttachments((prev) => [...prev, ...newAttachments]);
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+
+        if (data.file) {
+          const uploadedAtt: TicketAttachment = {
+            id: data.file.id,
+            name: data.file.name,
+            size: data.file.size,
+            type: data.file.type,
+            url: data.file.url,
+          };
+          setReplyAttachments((prev) => [...prev, uploadedAtt]);
+        }
+      } catch (err: any) {
+        alert(err.message || "Failed to upload attachment");
+      }
+    }
   };
 
   const removeAttachment = (id: string) => {

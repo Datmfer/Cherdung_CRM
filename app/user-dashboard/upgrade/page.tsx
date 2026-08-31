@@ -297,27 +297,63 @@ export default function UpgradePlanPage() {
                   </div>
                 </div>
 
-                {/* Upgrade Action Button */}
-                <div className="mt-8 pt-6 border-t border-slate-800">
+                {/* Upgrade Action Buttons */}
+                <div className="mt-8 pt-6 border-t border-slate-800 space-y-2.5">
                   <button
                     type="button"
                     disabled={isCurrentPlan || checkoutLoading === plan.stripePriceId}
                     onClick={() => handleUpgrade(plan.stripePriceId, plan.name)}
-                    className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`w-full py-3 px-5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       isCurrentPlan
                         ? "bg-slate-800 text-emerald-400 border border-emerald-500/30 cursor-not-allowed"
                         : isPopular
-                        ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:scale-[1.02]"
+                        ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30"
                         : "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
                     }`}
                   >
                     <CreditCard className="h-4 w-4" />
                     {checkoutLoading === plan.stripePriceId
-                      ? "Processing Upgrade..."
+                      ? "Processing..."
                       : isCurrentPlan
                       ? "Current Active Tier"
-                      : `Upgrade to ${plan.name}`}
+                      : `Stripe / Card Checkout`}
                   </button>
+
+                  {!isCurrentPlan && (
+                    <button
+                      type="button"
+                      disabled={checkoutLoading === `khalti-${plan.id}`}
+                      onClick={async () => {
+                        setCheckoutLoading(`khalti-${plan.id}`);
+                        try {
+                          const res = await fetch("/api/khalti/initiate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              amount: adjustedPrice,
+                              purchase_order_id: `PLAN-${plan.id}-${Date.now()}`,
+                              purchase_order_name: `Upgrade: ${plan.name}`,
+                            }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || "Khalti checkout failed");
+                          if (data.payment_url) {
+                            window.location.href = data.payment_url;
+                          }
+                        } catch (err: any) {
+                          setErrorMsg(err.message || "Failed to initiate Khalti payment");
+                        } finally {
+                          setCheckoutLoading(null);
+                        }
+                      }}
+                      className="w-full py-3 px-5 bg-[#5c2d91] hover:bg-[#4a2475] border border-purple-400/30 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-purple-900/20 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <div className="w-5 h-5 bg-white rounded-md flex items-center justify-center text-[#5c2d91] text-[10px] font-black">
+                        K
+                      </div>
+                      <span>Pay with Khalti 🇳🇵</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );

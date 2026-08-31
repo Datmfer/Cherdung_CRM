@@ -17,6 +17,19 @@ export const metadata: Metadata = {
   title: "Cherdung CRM — Invest Smarter, Grow with Confidence",
   description:
     "A secure digital investment platform that helps investors discover opportunities, track portfolio performance, and manage investments with complete transparency.",
+  openGraph: {
+    title: "Cherdung CRM — Invest Smarter, Grow with Confidence",
+    description:
+      "A secure digital investment platform that helps investors discover opportunities, track portfolio performance, and manage investments with complete transparency.",
+    type: "website",
+    siteName: "Cherdung CRM",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cherdung CRM — Invest Smarter, Grow with Confidence",
+    description:
+      "A secure digital investment platform that helps investors discover opportunities, track portfolio performance, and manage investments with complete transparency.",
+  },
 };
 
 export default function RootLayout({

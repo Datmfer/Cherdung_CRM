@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import StatCard from "@/components/dashboard/StatCard";
 import SimpleChart from "@/components/dashboard/SimpleChart";
@@ -9,8 +9,47 @@ import Button from "@/components/ui/Button";
 import { useAuth } from '@/contexts/AuthContext';
 import { Wallet, TrendingUp, ShieldCheck, User, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
+interface PortfolioData {
+  totalPortfolioValue: number;
+  totalInvested: number;
+  totalEarnings: number;
+  totalWithdrawals: number;
+  lifetimeReturnPct: string;
+  monthlyReturnPct: string;
+  activePlansCount: number;
+  activePlanTier: string;
+  emailVerified: boolean;
+  totpEnabled: boolean;
+}
+
 export default function UserDashboard() {
   const { user } = useAuth();
+  const [data, setData] = useState<PortfolioData | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPortfolio();
+  }, []);
+
+  const fetchPortfolio = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user/portfolio");
+      if (res.ok) {
+        const json = await res.json();
+        setData(json.metrics);
+        setRecentTransactions(json.transactions || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch portfolio data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isVerified = data?.emailVerified ?? Boolean(user?.emailVerified);
+  const is2faOn = data?.totpEnabled ?? Boolean(user?.totpEnabled);
 
   return (
     <div className="p-8 space-y-8 bg-slate-900 text-white min-h-screen">
@@ -45,32 +84,39 @@ export default function UserDashboard() {
       </div>
 
       {/* Account Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard
           title="Total Portfolio Value"
-          value="NPR 125,450"
-          change="+14.5% lifetime"
+          value={data ? `NPR ${data.totalPortfolioValue.toLocaleString()}` : "NPR 0"}
+          change={data ? `+${data.lifetimeReturnPct}% lifetime` : "0.0% lifetime"}
           icon="💰"
           color="emerald"
         />
         <StatCard
+          title="Total Invested"
+          value={data ? `NPR ${data.totalInvested.toLocaleString()}` : "NPR 0"}
+          change="Principal Invested"
+          icon="🏦"
+          color="purple"
+        />
+        <StatCard
           title="Active Plans"
-          value="2 Active"
-          change="Professional Tier"
+          value={data ? `${data.activePlansCount} Active` : "0 Active"}
+          change={data ? data.activePlanTier : "No Active Plan"}
           icon="📈"
           color="indigo"
         />
         <StatCard
           title="Total Earnings"
-          value="NPR 18,340"
-          change="+12.3% this month"
+          value={data ? `NPR ${data.totalEarnings.toLocaleString()}` : "NPR 0"}
+          change={data ? `+${data.monthlyReturnPct}% this month` : "0.0% this month"}
           icon="💵"
           color="blue"
         />
         <StatCard
           title="Verification Status"
-          value={user?.emailVerified ? "Verified" : "Unverified"}
-          change={user?.totpEnabled ? "2FA Protection On" : "2FA Off"}
+          value={isVerified ? "Verified" : "Unverified"}
+          change={is2faOn ? "2FA Protection On" : "2FA Off"}
           icon="🛡️"
           color="purple"
         />
@@ -122,11 +168,11 @@ export default function UserDashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
               <div>
-                <p className="font-bold text-white">Professional Investment Tier</p>
+                <p className="font-bold text-white">{data?.activePlanTier || "Professional Investment Tier"}</p>
                 <p className="text-xs text-slate-400">Renews Monthly • Active</p>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-emerald-400">NPR 149 / mo</p>
+                <p className="font-semibold text-emerald-400">Active Tier</p>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
               </div>
             </div>
@@ -136,18 +182,37 @@ export default function UserDashboard() {
         <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-4">Recent Portfolio Activity</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-                  <ArrowUpRight className="h-5 w-5" />
+            {recentTransactions.length > 0 ? (
+              recentTransactions.slice(0, 3).map((txn) => (
+                <div key={txn.id} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${txn.type === "WITHDRAWAL" ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                      {txn.type === "WITHDRAWAL" ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">{txn.type.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-slate-400">{txn.date}</p>
+                    </div>
+                  </div>
+                  <p className={`font-bold ${txn.type === "WITHDRAWAL" ? "text-rose-400" : "text-emerald-400"}`}>
+                    {txn.type === "WITHDRAWAL" ? "-" : "+"}NPR {txn.amount.toLocaleString()}
+                  </p>
                 </div>
-                <div>
-                  <p className="font-semibold text-white">Monthly Profit Distribution</p>
-                  <p className="text-xs text-slate-400">Automated Payout</p>
+              ))
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <ArrowUpRight className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">Monthly Profit Distribution</p>
+                    <p className="text-xs text-slate-400">Automated Payout</p>
+                  </div>
                 </div>
+                <p className="font-bold text-emerald-400">+NPR 1,240</p>
               </div>
-              <p className="font-bold text-emerald-400">+NPR 1,240</p>
-            </div>
+            )}
           </div>
         </div>
       </div>

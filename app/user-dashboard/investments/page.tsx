@@ -5,7 +5,8 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { TrendingUp, Check, ShieldCheck, CreditCard, ArrowRight } from "lucide-react";
+import AssetPerformanceCard from "@/components/dashboard/AssetPerformanceCard";
+import { TrendingUp, Check, ShieldCheck, CreditCard, ArrowRight, Layers } from "lucide-react";
 
 interface Plan {
   id: string;
@@ -65,7 +66,7 @@ export default function UserInvestments() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-8 space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -156,6 +157,65 @@ export default function UserInvestments() {
           })}
         </div>
       )}
+
+      {/* Individual Investment Plan Performance & ROI Analytics */}
+      <div className="space-y-6 pt-6 border-t border-slate-800">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Layers className="h-6 w-6 text-emerald-400" /> Plan Performance & Individual ROI Breakdown
+          </h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Track historical valuations and individual return rates across each available investment tier
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <AssetPerformanceCard
+            name="Professional Tier Plan"
+            allocationShare={50}
+            currentValue="$149.00 / mo"
+            investedAmount="$149.00"
+            gainLoss="+$28.40"
+            roi="+19.1%"
+            isPositive={true}
+            trendData={[120, 125, 132, 140, 142, 146, 149]}
+            chartColor="indigo"
+            isActive={subscription?.stripeStatus === "active"}
+            riskTier="High Growth"
+            payoutInterval="Monthly Payout"
+          />
+
+          <AssetPerformanceCard
+            name="Growth Plan Tier"
+            allocationShare={35}
+            currentValue="$49.00 / mo"
+            investedAmount="$49.00"
+            gainLoss="+$6.20"
+            roi="+12.6%"
+            isPositive={true}
+            trendData={[40, 42, 43, 45, 46, 47, 49]}
+            chartColor="green"
+            isActive={false}
+            riskTier="Balanced Growth"
+            payoutInterval="Monthly Payout"
+          />
+
+          <AssetPerformanceCard
+            name="Starter Plan Tier"
+            allocationShare={15}
+            currentValue="$19.00 / mo"
+            investedAmount="$19.00"
+            gainLoss="+$1.50"
+            roi="+7.8%"
+            isPositive={true}
+            trendData={[15, 16, 16.5, 17, 18, 18.5, 19]}
+            chartColor="purple"
+            isActive={false}
+            riskTier="Conservative"
+            payoutInterval="Monthly Payout"
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -26,6 +26,18 @@ model User {
   refreshTokens        RefreshToken[]
   sessions             Session[]
   activities           Activity[]
+  transactions         Transaction[]
+  blogs                Blog[]
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // DEPOSIT, WITHDRAWAL, PROFIT_PAYOUT
+  amount    Float
+  status    String   @default("COMPLETED")
+  createdAt DateTime @default(now())
 }
 
 model RefreshToken {
@@ -82,4 +94,19 @@ model Plan {
   features      String   // JSON string array
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Blog {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+  category    String   @default("Investment")
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

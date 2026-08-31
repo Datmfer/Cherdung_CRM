@@ -103,36 +103,45 @@ export default function UserSupportPage() {
     }
   };
 
-  // Handle local file selection simulation for attachments
-  const handleFileAttachment = (
+  // Handle file upload for attachments
+  const handleFileAttachment = async (
     e: React.ChangeEvent<HTMLInputElement>,
     isReply: boolean = false
   ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newAttachments: TicketAttachment[] = Array.from(files).map((file, idx) => {
-      const reader = new FileReader();
-      const id = `ATT-${Date.now()}-${idx}`;
-      let dataUrl = "";
-      reader.onload = (evt) => {
-        dataUrl = evt.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      return {
-        id,
-        name: file.name,
-        size: `${Math.round(file.size / 1024)} KB`,
-        type: file.type || "application/octet-stream",
-        url: URL.createObjectURL(file),
-      };
-    });
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-    if (isReply) {
-      setReplyAttachments((prev) => [...prev, ...newAttachments]);
-    } else {
-      setCreateAttachments((prev) => [...prev, ...newAttachments]);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+
+        if (data.file) {
+          const uploadedAtt: TicketAttachment = {
+            id: data.file.id,
+            name: data.file.name,
+            size: data.file.size,
+            type: data.file.type,
+            url: data.file.url,
+          };
+
+          if (isReply) {
+            setReplyAttachments((prev) => [...prev, uploadedAtt]);
+          } else {
+            setCreateAttachments((prev) => [...prev, uploadedAtt]);
+          }
+        }
+      } catch (err: any) {
+        alert(err.message || "Failed to upload file");
+      }
     }
   };
 

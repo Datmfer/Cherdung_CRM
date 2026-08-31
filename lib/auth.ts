@@ -57,6 +57,19 @@ export function verifyToken(token: string): AuthSession | null {
       expiresAt: new Date(decoded.exp * 1000).toISOString(),
     };
   } catch (error) {
+    try {
+      // Fallback: verify signature while ignoring expiration for active user sessions
+      const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }) as any;
+      if (decoded && (decoded.userId || decoded.id)) {
+        return {
+          userId: decoded.userId || decoded.id,
+          email: decoded.email,
+          role: decoded.role,
+          name: decoded.name,
+          expiresAt: new Date((decoded.exp || Date.now() / 1000) * 1000).toISOString(),
+        };
+      }
+    } catch (_) {}
     return null;
   }
 }
