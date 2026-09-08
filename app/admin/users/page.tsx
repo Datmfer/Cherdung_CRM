@@ -5,7 +5,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Card from "@/components/ui/Card";
-import { Download, ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Search, UserPlus, Pencil, Trash2, AlertTriangle, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface User {
   id: string;
@@ -18,6 +19,7 @@ interface User {
 }
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -38,6 +40,22 @@ export default function AdminUsers() {
   });
   const [createError, setCreateError] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
+
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    role: "user" as "admin" | "support" | "user",
+    password: "",
+  });
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Delete user state
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const roleOptions = [
     { value: "all", label: "All Roles" },
@@ -133,7 +151,85 @@ export default function AdminUsers() {
     }
   };
 
-  const roleColors = {
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      password: "",
+    });
+    setEditError("");
+  };
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditError("");
+    setEditLoading(true);
+
+    try {
+      const body: any = {
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+      };
+      if (editForm.password) {
+        if (editForm.password.length < 8) {
+          setEditError("New password must be at least 8 characters");
+          setEditLoading(false);
+          return;
+        }
+        body.password = editForm.password;
+      }
+
+      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setEditingUser(null);
+        fetchUsers();
+      } else {
+        setEditError(data.error || "Failed to update user");
+      }
+    } catch (error) {
+      setEditError("Failed to update user");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleteError("");
+    setDeleteLoading(true);
+
+    try {
+      const response = await fetch(`/api/admin/users/${deletingUser.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setDeletingUser(null);
+        fetchUsers();
+      } else {
+        setDeleteError(data.error || "Failed to delete user");
+      }
+    } catch (error) {
+      setDeleteError("Failed to delete user");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const roleColors: Record<string, string> = {
     admin: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
     support: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     user: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
@@ -305,6 +401,9 @@ export default function AdminUsers() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -324,8 +423,8 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${roleColors[user.role]}`}>
-                        {user.role.toUpperCase()}
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${roleColors[user.role] || roleColors.user}`}>
+                        {user.role ? user.role.toUpperCase() : "USER"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -341,6 +440,29 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="p-1.5 text-gray-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
+                          title="Edit User"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingUser(user)}
+                          disabled={currentUser?.id === user.id}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            currentUser?.id === user.id
+                              ? "text-gray-600 cursor-not-allowed"
+                              : "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
+                          }`}
+                          title={currentUser?.id === user.id ? "Cannot delete yourself" : "Delete User"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -372,6 +494,107 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-indigo-400" /> Edit User Profile
+              </h3>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" /> {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleEditUser} className="space-y-4">
+              <Input
+                label="Full Name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+              />
+
+              <Input
+                label="Email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                required
+              />
+
+              <Select
+                label="User Role"
+                options={roleOptions.filter((r) => r.value !== "all")}
+                value={editForm.role}
+                onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
+              />
+
+              <div>
+                <Input
+                  label="New Password (optional)"
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  placeholder="Leave blank to keep existing password"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-3">
+                <Button type="button" variant="secondary" onClick={() => setEditingUser(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editLoading}>
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertTriangle className="h-6 w-6 shrink-0" />
+              <h3 className="text-xl font-bold">Confirm User Deletion</h3>
+            </div>
+
+            <p className="text-sm text-slate-300">
+              Are you sure you want to permanently delete the account for{" "}
+              <span className="font-bold text-white">{deletingUser.name}</span> ({deletingUser.email})? This action cannot be undone.
+            </p>
+
+            {deleteError && (
+              <div className="p-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end pt-2">
+              <Button type="button" variant="secondary" onClick={() => setDeletingUser(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDeleteUser} disabled={deleteLoading}>
+                {deleteLoading ? "Deleting..." : "Permanently Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

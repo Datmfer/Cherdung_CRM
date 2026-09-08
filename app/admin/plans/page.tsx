@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
-import { Plus, Trash2, Check, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Check, AlertCircle, Pencil, X } from "lucide-react";
 
 interface Plan {
   id: string;
@@ -27,6 +27,15 @@ export default function AdminPlans() {
   const [featureInput, setFeatureInput] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Edit plan form state
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editInterval, setEditInterval] = useState("monthly");
+  const [editFeatureInput, setEditFeatureInput] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     fetchPlans();
@@ -81,6 +90,50 @@ export default function AdminPlans() {
       setError(err.message);
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const openEditModal = (plan: Plan) => {
+    setEditingPlan(plan);
+    setEditName(plan.name);
+    setEditPrice(plan.price.toString());
+    setEditInterval(plan.interval);
+    setEditFeatureInput(Array.isArray(plan.features) ? plan.features.join(", ") : "");
+    setEditError("");
+  };
+
+  const handleEditPlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlan) return;
+    setEditLoading(true);
+    setEditError("");
+
+    try {
+      const featuresArray = editFeatureInput
+        .split(",")
+        .map((f) => f.trim())
+        .filter(Boolean);
+
+      const res = await fetch(`/api/admin/plans/${editingPlan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          price: parseFloat(editPrice),
+          interval: editInterval,
+          features: featuresArray,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update plan");
+
+      setEditingPlan(null);
+      fetchPlans();
+    } catch (err: any) {
+      setEditError(err.message);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -145,7 +198,7 @@ export default function AdminPlans() {
 
                 <div className="space-y-2 mt-4">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Included Features:</p>
-                  {plan.features.map((feat, idx) => (
+                  {Array.isArray(plan.features) && plan.features.map((feat, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm text-slate-300">
                       <Check className="h-4 w-4 text-emerald-400 shrink-0" />
                       <span>{feat}</span>
@@ -154,9 +207,12 @@ export default function AdminPlans() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+              <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => openEditModal(plan)} className="flex items-center gap-1.5 text-xs">
+                  <Pencil className="h-4 w-4" /> Edit
+                </Button>
                 <Button variant="danger" onClick={() => handleDeletePlan(plan.id)} className="flex items-center gap-1.5 text-xs">
-                  <Trash2 className="h-4 w-4" /> Delete Plan
+                  <Trash2 className="h-4 w-4" /> Delete
                 </Button>
               </div>
             </Card>
@@ -167,12 +223,17 @@ export default function AdminPlans() {
       {/* Create Plan Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white space-y-4">
-            <h3 className="text-xl font-bold">Create Investment Plan</h3>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold">Create Investment Plan</h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
             {error && (
               <div className="p-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" /> {error}
+                <AlertCircle className="h-4 w-4 shrink-0" /> {error}
               </div>
             )}
 
@@ -232,6 +293,80 @@ export default function AdminPlans() {
           </div>
         </div>
       )}
+
+      {/* Edit Plan Modal */}
+      {editingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-indigo-400" /> Edit Investment Plan
+              </h3>
+              <button onClick={() => setEditingPlan(null)} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" /> {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleEditPlan} className="space-y-4">
+              <Input
+                label="Plan Name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Price ($)"
+                  type="number"
+                  step="0.01"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  required
+                />
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Billing Interval</label>
+                  <select
+                    value={editInterval}
+                    onChange={(e) => setEditInterval(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Features (comma-separated)
+                </label>
+                <textarea
+                  value={editFeatureInput}
+                  onChange={(e) => setEditFeatureInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-700 rounded-xl bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <Button type="button" variant="secondary" onClick={() => setEditingPlan(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editLoading}>
+                  {editLoading ? "Updating..." : "Update Plan"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

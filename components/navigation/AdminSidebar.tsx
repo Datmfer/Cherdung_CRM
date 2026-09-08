@@ -8,6 +8,7 @@ const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: "📊" },
   { name: "User Management", href: "/admin/users", icon: "👥" },
   { name: "Investment Plans", href: "/admin/plans", icon: "💰" },
+  { name: "Blog Posts", href: "/admin/blogs", icon: "📝" },
   { name: "Support Tickets", href: "/admin/tickets", icon: "🎫" },
   { name: "Analytics", href: "/admin/analytics", icon: "📈" },
   { name: "Settings", href: "/admin/settings", icon: "⚙️" },
