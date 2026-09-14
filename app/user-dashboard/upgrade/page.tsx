@@ -27,6 +27,14 @@ interface Plan {
 }
 
 export default function UpgradePlanPage() {
+  return (
+    <React.Suspense fallback={<div className="p-10 text-center text-slate-400">Loading plan options...</div>}>
+      <UpgradePlanContent />
+    </React.Suspense>
+  );
+}
+
+function UpgradePlanContent() {
   const searchParams = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
