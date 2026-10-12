@@ -102,7 +102,7 @@ function UpgradePlanContent() {
           {
             id: "starter",
             name: "Starter Tier",
-            price: 49,
+            price: 19,
             interval: "monthly",
             stripePriceId: "price_starter_mock",
             features: [
@@ -115,6 +115,20 @@ function UpgradePlanContent() {
           },
           {
             id: "growth",
+            name: "Growth Plan Tier",
+            price: 49,
+            interval: "monthly",
+            stripePriceId: "price_growth_mock",
+            features: [
+              "Up to 15 User Accounts",
+              "Advanced CRM & Lead Insights",
+              "Priority Email Support",
+              "25 GB Secure Cloud Storage",
+              "Portfolio Tax Optimization",
+            ],
+          },
+          {
+            id: "professional",
             name: "Professional Tier",
             price: 149,
             interval: "monthly",
@@ -125,22 +139,7 @@ function UpgradePlanContent() {
               "Priority 24/7 Support Channel",
               "50 GB Secure Cloud Storage",
               "Custom Workflow Automation",
-              "Portfolio Tax Optimization",
-            ],
-          },
-          {
-            id: "premium",
-            name: "Enterprise Tier",
-            price: 499,
-            interval: "monthly",
-            stripePriceId: "price_enterprise_mock",
-            features: [
-              "Unlimited User Accounts",
-              "Dedicated Account Manager & Advisor",
-              "Custom REST & Webhook Integrations",
-              "Unlimited Secure Storage",
-              "Guaranteed 99.99% SLA Uptime",
-              "Daily Automated Risk Audits",
+              "Dedicated Account Manager",
             ],
           },
         ];
@@ -245,6 +244,7 @@ function UpgradePlanContent() {
             const isPopular = plan.name.toLowerCase().includes("professional") || index === 1;
             const adjustedPrice =
               billingCycle === "yearly" ? Math.round(plan.price * 0.8) : plan.price;
+            const nprPrice = Math.round(adjustedPrice * 133);
 
             return (
               <div
@@ -283,7 +283,7 @@ function UpgradePlanContent() {
                   {/* Price */}
                   <div className="border-b border-slate-800 pb-6">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-extrabold text-white">NPR {adjustedPrice}</span>
+                      <span className="text-4xl font-extrabold text-white">रू {nprPrice.toLocaleString()}</span>
                       <span className="text-sm text-slate-400 font-medium">/ month</span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
@@ -338,7 +338,7 @@ function UpgradePlanContent() {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                              amount: adjustedPrice,
+                              amount: nprPrice,
                               purchase_order_id: `PLAN-${plan.id}-${Date.now()}`,
                               purchase_order_name: `Upgrade: ${plan.name}`,
                             }),

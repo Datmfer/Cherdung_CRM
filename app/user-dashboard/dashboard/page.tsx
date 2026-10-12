@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import StatCard from "@/components/dashboard/StatCard";
-import SimpleChart from "@/components/dashboard/SimpleChart";
+import { PortfolioGrowthChart } from "@/components/dashboard/InvestmentLineChart";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useAuth } from '@/contexts/AuthContext';
@@ -127,10 +127,18 @@ export default function UserDashboard() {
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <span>📈</span> Portfolio Growth History
           </h3>
-          <SimpleChart
-            data={[10000, 10500, 11200, 10800, 11500, 12100, 11800, 12450, 12800]}
-            color="green"
-            label="Portfolio valuation trend"
+          <PortfolioGrowthChart
+            data={[
+              { month: "Feb", professional: 0,   growth: 0,    starter: 0    },
+              { month: "Mar", professional: 0.8,  growth: 1.2,  starter: 2.1  },
+              { month: "Apr", professional: 1.4,  growth: 2.2,  starter: 3.8  },
+              { month: "May", professional: 2.1,  growth: 3.6,  starter: 5.9  },
+              { month: "Jun", professional: 2.9,  growth: 4.8,  starter: 7.0  },
+              { month: "Jul", professional: 3.7,  growth: 5.4,  starter: 8.4  },
+              { month: "Aug", professional: 4.3,  growth: 4.4,  starter: 8.8  },
+              { month: "Sep", professional: 5.3,  growth: 6.9,  starter: 10.4 },
+              { month: "Oct", professional: 6.4,  growth: 8.9,  starter: 11.8 },
+            ]}
           />
         </div>
 

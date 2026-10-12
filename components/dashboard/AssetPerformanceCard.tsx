@@ -3,7 +3,7 @@
 import React from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import SimpleChart from "@/components/dashboard/SimpleChart";
+import { MiniLineChart } from "@/components/dashboard/InvestmentLineChart";
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Shield, Zap } from "lucide-react";
 
 export interface AssetPerformanceCardProps {
@@ -97,7 +97,7 @@ export default function AssetPerformanceCard({
             </span>
             <span className="text-[11px] text-slate-400">Historical Valuations</span>
           </div>
-          <SimpleChart data={trendData} color={chartColor} label="" />
+          <MiniLineChart data={trendData} color={chartColor} />
         </div>
       </div>
     </Card>

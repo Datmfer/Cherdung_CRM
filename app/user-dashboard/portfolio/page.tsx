@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
-import SimpleChart from "@/components/dashboard/SimpleChart";
+import { HistoricalValuationChart } from "@/components/dashboard/InvestmentLineChart";
 import StatCard from "@/components/dashboard/StatCard";
 import AssetPerformanceCard from "@/components/dashboard/AssetPerformanceCard";
 import SocialShare from "@/components/ui/SocialShare";
@@ -73,10 +73,16 @@ export default function UserPortfolio() {
         <div className="lg:col-span-2">
           <Card>
             <h3 className="text-lg font-bold text-white mb-4">Historical Valuation Performance</h3>
-            <SimpleChart
-              data={[10000, 10500, 11200, 10800, 11500, 12100, 11800, 12450, 12800]}
-              color="green"
-              label="Portfolio valuation growth"
+            <HistoricalValuationChart
+              data={[
+                { month: "Apr", professional: 28000, growth: 58000, starter: 10800 },
+                { month: "May", professional: 28700, growth: 62000, starter: 11000 },
+                { month: "Jun", professional: 29200, growth: 67000, starter: 11200 },
+                { month: "Jul", professional: 29800, growth: 72000, starter: 11500 },
+                { month: "Aug", professional: 30200, growth: 75000, starter: 11900 },
+                { month: "Sep", professional: 30900, growth: 78500, starter: 12200 },
+                { month: "Oct", professional: 31362, growth: 81542, starter: 12546 },
+              ]}
             />
           </Card>
         </div>
